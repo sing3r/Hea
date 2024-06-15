@@ -12,11 +12,16 @@ HTTP参数污染（HPP）是指通过污染 Web 应用程序的 HTTP 参数来�
 
 ## 一个案例
 1. 尝试登录某个程序，该程序向我询问 OPT 用以登录
+   
 ![](https://miro.medium.com/max/600/1*s-M09yWBylPVEhA6_e0nSw.jpeg)
+
 2. 填写 Email 并点击发送
 3. 使用 BurpSuite 拦截请求包，修改 POST 主体，添加一个相同的 `email_id` 参数并提供另一个 Email 地址。
+   
 ![](https://miro.medium.com/max/1737/1*z_RpnZyKHLn6B4Lz4ONT3Q.png)
+
 4. 成功从 radhika…..@gmail.com 获取到只应发送到 shrey……@gmail.com 的 OPT ，并通过该 OPT 成功登录绑定了 shrey……@gmail.com 的账户。
+
 ![](https://miro.medium.com/max/784/1*a671GrRtiMYfLUL7nURD8Q.png)
 ![](https://miro.medium.com/max/1698/1*Ux-ILfCr_Mk_xmzzsXwNnA.jpeg)
 
