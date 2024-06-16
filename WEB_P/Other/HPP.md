@@ -155,6 +155,72 @@ https://twitter.com/intent/like?tweet_id=6616252302978211845&screen_name=erictes
 
 > 这个类似于之前的 Twitter UID 漏洞。不出意料，当一个站点存在 HPP 漏洞时，它就可能是更广泛的系统化问题的指标。有时如果你找到了类似的漏洞，它值得花时间来整体探索该平台，来看看是否存在其它可以利用相似行为的地方。这个例子中，就像上面的 UID，Twitter 接受用户标识，`screen_name`，它基于后端逻辑易受 HPP 攻击。
 
+
+### 4\. 通过 HTTP 参数污染绕过 Google reCAPTCHA 认证
+
+#### 概述
+
+1.  **漏洞描述**：
+    
+    -   reCAPTCHA 是 Google 提供的验证码服务，用于保护网站免受机器人的攻击。
+    -   研究发现，如果 Web 应用以不安全的方式处理发送到 `/recaptcha/api/siteverify` 的请求，可以通过 HTTP 参数污染绕过 reCAPTCHA 认证。
+2.  **HTTP 参数污染**：
+    
+    -   利用多个同名参数的处理方式不一致来绕过安全验证。
+    -   例如，通过向 URL 添加多个 `secret` 参数，reCAPTCHA API 总是使用第一个参数，忽略第二个。
+3.  **利用步骤**：
+    
+    -   发送特制的 HTTP 请求，在 `recaptcha-response` 参数后添加一个 URL 编码的 `&secret` 参数。
+    -   应用程序将两个 `secret` 参数发送到 Google API，API 使用第一个参数，导致验证绕过。
+4.  **修复措施**：
+    
+    -   Google 修复了 API，使其在检测到重复的 `secret` 参数时返回错误。
+    -   开发者应避免使用字符串拼接来构建查询字符串，应使用字典存储键值对并进行 URL 编码。
+
+#### 详细步骤
+
+1.  **发送特制请求**：
+    
+    ```http
+    POST /verify-recaptcha-response HTTP/1.1
+    Host: vulnerable-app.com
+    recaptcha-response=anything%26secret%3d6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+    ```
+    
+2.  **接收并处理响应**：
+    
+    -   如果应用程序存在参数污染漏洞，会生成如下请求：
+    
+    ```http
+    POST /recaptcha/api/siteverify HTTP/1.1
+    Host: www.google.com
+    Content-Type: application/x-www-form-urlencoded
+    recaptcha-response=anything&secret=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe&secret=应用程序的secret
+    ```
+    
+    -   reCAPTCHA API 使用第一个 `secret`，返回成功响应。
+
+#### 实战中的利用
+
+-   实现攻击需要两个条件：
+    1.  应用在构建 reCAPTCHA URL 时存在 HTTP 参数污染漏洞。
+    2.  应用在创建 URL 时 `response` 参数在前，`secret` 参数在后。
+
+#### 时间线
+
+-   **漏洞提交**：2018 年 1 月 29 日
+-   **Google 确认漏洞**：2018 年 2 月 1 日
+-   **补丁发布**：2018 年 3 月 25 日
+
+#### 总结
+
+-   **开发者**：应避免使用字符串拼接创建查询字符串，使用字典进行 URL 编码。
+-   **安全工作者**：HTTP 参数污染是一个有用的攻击手段，应密切关注。
+
+#### 原文
+
+https://andresriancho.com/recaptcha-bypass-via-http-parameter-pollution/
+
 ## 总结
 
 HTTP 参数污染的风险实际上取决于后端所执行的操作，以及被污染的参数提交到了哪里。
