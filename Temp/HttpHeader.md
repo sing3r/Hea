@@ -1,6 +1,6 @@
 ## Http Header 一些知识点
 
-## 1. 被忽略的 Location
+## 1. 被忽略的 Location(真的吗？)
 
 ### Location Header 顺序问题
 
