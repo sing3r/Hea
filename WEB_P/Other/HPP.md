@@ -184,6 +184,7 @@ https://twitter.com/intent/like?tweet_id=6616252302978211845&screen_name=erictes
     ```http
     POST /verify-recaptcha-response HTTP/1.1
     Host: vulnerable-app.com
+
     recaptcha-response=anything%26secret%3d6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
     ```
     
@@ -195,6 +196,7 @@ https://twitter.com/intent/like?tweet_id=6616252302978211845&screen_name=erictes
     POST /recaptcha/api/siteverify HTTP/1.1
     Host: www.google.com
     Content-Type: application/x-www-form-urlencoded
+    
     recaptcha-response=anything&secret=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe&secret=应用程序的secret
     ```
     
