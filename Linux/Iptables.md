@@ -43,8 +43,7 @@
 
 ### 1. 备份
 ```shell
-iptables-save > /etc/iptables/rule.v4_20240101_old
-iptables-save > /etc/iptables/rule.v4_20240101_new
+iptables-save > /etc/iptables/rule.v4_20240101
 ```
 
 ### 2. 查看
@@ -86,8 +85,11 @@ sudo iptables -A INPUT -p icmp -j REJECT --reject-with icmp-host-unreachable
 ## 日志记录
 sudo iptables -A INPUT -j LOG --log-prefix "iptables denied: " --log-level 7
 
+# 保存为默认的 iptables 规则，重启后会从默认的 iptables 规则中恢复
+service iptables save
+
 ## 从指定文件恢复策略
-iptables-restore < etc/iptables/rule.v4_20240101_new
+iptables-restore < etc/iptables/rule.v4_20240101
 ```
 
 ## 4. 优雅配置
