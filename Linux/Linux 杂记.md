@@ -143,7 +143,7 @@ sudo logrotate -f /etc/logrotate.d/mysql-audit
 
 #### 开启特定的日志记录
 
-1. 配置 `my.cnf`，开启 log_bin、general_log、log_error
+1. 配置 `my.cnf`，开启 log_bin、general_log、log_error、slow_query_log
 
 ```shell
 [mysqld]
@@ -157,6 +157,11 @@ general_log_file = /var/log/mysql/mysql-general.log
 
 # mysql-error.log
 log_error = /var/log/mysql/mysql-error.log
+
+# slow_query_log
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2 // 单位是秒
 ```
 
 2. 重启 mysql 服务
