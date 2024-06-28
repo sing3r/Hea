@@ -285,3 +285,29 @@ cp /etc/pam.d/s/system-auth /etc/pam.d/s/system-auth.20240628.bak
 vim /etc/pam.d/system-auth
 password  requisite  pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= minlen=10 lcredit=-1 ucredit=-1 dcredit=-1 ocredit=-1 enforce_for_root
 ```
+
+### 密码过期
+```shell
+vim /etc/login.defs
+PASS_MAX_DAYS 90
+```
+
+###  日志备份
+
+```shell
+#!/bin/bash
+BACKUP_DIR="/data/system_log/"
+DATE=$(date +%Y%m%d)
+BACKUP_FILE="$BACKUP_DIR/system_log_backup_$DATE.tar.gz"
+mkdir -p $BACKUP_DIR
+tar -czf $BACKUP_FILE /var/log/
+
+sudo chmod +x /usr/local/bin/backup_logs.sh
+
+crontab -e
+0 3 1 * * /usr/local/bin/backup_logs.sh
+```
+
+
+
+
