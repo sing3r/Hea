@@ -275,3 +275,13 @@ crontab -e
 CREATE DATABASE testdb;
 mysql -u username -p testdb < /path/to/your/backup_file.sql
 ```
+
+# 基线加固
+
+### 密码复杂度设置
+
+```shell
+cp /etc/pam.d/s/system-auth /etc/pam.d/s/system-auth.20240628.bak
+vim /etc/pam.d/system-auth
+password  requisite  pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type= minlen=10 lcredit=-1 ucredit=-1 dcredit=-1 ocredit=-1 enforce_for_root
+```
