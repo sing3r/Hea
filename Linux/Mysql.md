@@ -26,6 +26,7 @@
 # 配置 mysql-bin.log
 log_bin = /var/log/mysql/mysql-bin.log
 server-id = 1
+max_binlog_size = 512M # 默认为 1GB
 
 # 配置 mysql-general.log
 general_log = 1
@@ -38,6 +39,9 @@ log_error = /var/log/mysql/mysql-error.log
 slow_query_log = 1
 slow_query_log_file = /var/log/mysql/mysql-slow.log
 long_query_time = 2 # 2 秒
+
+# 配置日志存储时间为 185 日
+expire_logs_days = 185
 
 # 登录超时退出
 wait_timeout = 1800
