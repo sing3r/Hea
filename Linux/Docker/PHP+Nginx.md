@@ -16,37 +16,66 @@ docker pull nginx
 docker run --name nginx.0 -p 80:80 -d nginx
 mkdir /home/user/www/html		# 映射页面文件的本地路径
 mkdir /home/user/nginx/conf.d		# 映射配置文件的本地路径
+mkdir /home/user/nginx/logs		# 映射配置文件的本地路径
 docker cp nginx.0:/usr/share/nginx/html /home/user/www/		# copy全部页面文件至本地路径
 docker cp /etc/nginx/conf.d /home/user/nginx/			# copy全部配置文件至本地路径
 docker stop nginx.0 && docker rm nginx.0		# 停止并删除辅助容器
-docker run --name nginx.1 -p 80:80 -d -v /home/user/www/html:/usr/share/nginx/html -v /home/user/nginx/conf.d:/etc/nginx/conf.d nginx
+docker run --name nginx.1 -p 80:80 -d -v /home/user/nginx/logs:/var/log/nginx -v /home/user/www/html:/usr/share/nginx/html -v /home/user/nginx/conf.d:/etc/nginx/conf.d nginx
 ```
 
 ### 修改 /home/user/nginx/conf.d/default.conf
 ```shell
 server {
-    listen       80;	# 监听80端口
+    listen       80;
     listen  [::]:80;
-    server_name  localhost;		# 也可以填写自己注册的域名
-    location / {
-        root   /usr/share/nginx/html;	# 当前配置的页面文件根目录
-        index  index.php index.html index.htm;	# 添加index.php作为默认首页
+    server_name  localhost;
+
+    # 设置默认访问日志路径
+    access_log  /var/log/nginx/access.log;
+
+    # 静态资源不记录日志
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        access_log off;
+        root /usr/share/nginx/html;
     }
-    # error_page  404              /404.html;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.php index.html index.htm;
+    }
+
+    #error_page  404              /404.html;
+
     # redirect server error pages to the static page /50x.html
     #
-    error_page   500 502 503 504  /50x.html;		# 错误页面设置
+    error_page   500 502 503 504  /50x.html;
     location = /50x.html {
         root   /usr/share/nginx/html;
     }
-    # 与php-fpm通信的关键设置
+
+    # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+    #
+    #location ~ \.php$ {
+    #    proxy_pass   http://127.0.0.1;
+    #}
+
+    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    #
     location ~ \.php$ {
-         root   /usr/share/nginx/html;	# 页面文件根目录
-         fastcgi_pass   php.1容器的ip:9000;	# php-fpm的通信端口，由于已经将容器9000端口映射到了主机的9000端口，所以这里填“主机ip:9000”也是可以的。
-         fastcgi_index  index.php;		# 默认主页文件设置
-         fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
-         fastcgi_param  SCRIPT_NAME      $fastcgi_script_name;
-         include        fastcgi_params;
+        root           /usr/share/nginx/html;
+        fastcgi_pass   172.17.0.2:9000; # 修改为 php.1 容器地址
+        fastcgi_index  index.php;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+	#fastcgi_param  SCRIPT_NAME      $fastcgi_script_name;
+        include        fastcgi_params;
     }
+
+    # deny access to .htaccess files, if Apache's document root
+    # concurs with nginx's one
+    #
+    #location ~ /\.ht {
+    #    deny  all;.
+
+    #}
 }
 ```
