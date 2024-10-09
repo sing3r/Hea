@@ -79,3 +79,28 @@ server {
     #}
 }
 ```
+
+## Mysql
+```shell
+docker search mysql # 搜索镜像
+docker pull mysql   # 拉取镜像
+
+docker run -p 3306:3306 --name mysql --restart=always --privileged=true \
+-v /etc/localtime:/etc/localtime:ro \
+-e MYSQL_ROOT_PASSWORD=123456 -d mysql:latest
+
+docker cp mysql:/var/log/mysql /home/user/DockerData/mysql/log
+docker cp mysql:/var/lib/mysql /home/user/DockerData/mysql/data
+docker cp mysql:/etc/mysql /home/user/DockerData/mysql/conf
+docker cp mysql:/etc/my.cnf /home/user/DockerData/mysql/conf/my.cnf
+docker stop mysql && docker rm mysql
+
+docker run -p 3306:3306 --name mysql --restart=always --privileged=true \
+-v /home/user/DockerData/mysql/log:/var/log/mysql \
+-v /home/user/DockerData/mysql/data:/var/lib/mysql \
+-v /home/user/DockerData/mysql/conf:/etc/mysql \
+-v /home/user/DockerData/mysql/conf/my.cnf:/etc/my.cnf \
+-v /etc/localtime:/etc/localtime:ro \
+-e MYSQL_ROOT_PASSWORD=123456 -d mysql:latest
+
+```
