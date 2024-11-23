@@ -580,6 +580,6 @@ Hop-by-Hop Headers 是 HTTP 协议中的关键机制，但如果代理和服务�
 
 
 ## **6. 参考**
-https://nathandavison.com/blog/abusing-http-hop-by-hop-request-headers
-https://www.freebuf.com/articles/web/334945.html
+https://nathandavison.com/blog/abusing-http-hop-by-hop-request-headers\
+https://www.freebuf.com/articles/web/334945.html\
 https://paper.seebug.org/1908/
