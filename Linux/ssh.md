@@ -73,3 +73,8 @@
     ```shell
     sshd -t
     ```
+
+6. 重启 SSH 服务
+```shell
+service ssh restart
+```
