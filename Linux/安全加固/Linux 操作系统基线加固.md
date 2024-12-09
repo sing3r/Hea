@@ -5,9 +5,6 @@ PermitEmptyPasswords no
 # 不允许 root 用户远程登录
 PermitRootLogin no
 
-# 指定 SSH 传输加密算法。查询 ssh 支持的加密算法命令：ssh -Q cipher
-Ciphers aes256-ctr，aes192-ctr，aes128-ctr
-
 # 配置用户及组黑白名单
 AllowUsers user1 user2
 AllowGroups group1 group2
@@ -17,14 +14,20 @@ DenyGroups group3 group4
 # 每个连接允许的最大验证尝试次
 MaxAuthTries 4
 
-# 指定 MAC 算法。查询 ssh 支持的 MAC 加密算法命令：ssh -Q mac
-MACs hmac-sha2-512，hmac-sha2-256
-
 # 设置服务器向客户端发送空闲连接消息的频率
 ClientAliveInterval 300
 
 # 置在服务器终止客户端会话之前，未收到客户端响应的最大请求（alive消息）数量
 ClientAliveCountMax 3
+
+# 基于主机的验证
+HostbasedAuthentication no
+
+# 指定 SSH 传输加密算法。查询 ssh 支持的加密算法命令：ssh -Q cipher
+Ciphers aes256-ctr，aes192-ctr，aes128-ctr
+
+# 指定 MAC 算法。查询 ssh 支持的 MAC 加密算法命令：ssh -Q mac
+MACs hmac-sha2-512，hmac-sha2-256
 ```
 
 ## 用户帐户和环境

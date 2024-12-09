@@ -141,8 +141,12 @@ type=SYSCALL msg=audit(2023年08月08日 10:17:14.411:4103) : arch=x86_64 syscal
 
 查询失败的登录尝试，可以看到 `192.168.29.22` 这个 IP 频繁地尝试登录，说明这台机器可能已经被安全团队渗透。
 
-```sh
-# aureport -au --failed | less Authentication Report ============================================ # date time acct host term exe success event ============================================ 216. 2023年08月01日 17:49:36 root 192.168.29.22 ssh /usr/sbin/sshd no 907 217. 2023年08月01日 17:49:39 root 192.168.29.22 ssh /usr/sbin/sshd no 915 218. 2023年08月01日 17:49:41 root 192.168.29.22 ssh /usr/sbin/sshd no 923 219. 2023年08月01日 17:49:44 root 192.168.29.22 ssh /usr/sbin/sshd no 931 220. 2023年08月01日 17:49:47 root 192.168.29.22 ssh /usr/sbin/sshd no 939 221. 2023年08月01日 17:49:50 root 192.168.29.22 ssh /usr/sbin/sshd no 947
+```shell
+# aureport -au --failed | less 
+Authentication Report 
+============================================
+# date time acct host term exe success event ============================================
+216. 2023年08月01日 17:49:36 root 192.168.29.22 ssh /usr/sbin/sshd no 907 217. 2023年08月01日 17:49:39 root 192.168.29.22 ssh /usr/sbin/sshd no 915 218. 2023年08月01日 17:49:41 root 192.168.29.22 ssh /usr/sbin/sshd no 923 219. 2023年08月01日 17:49:44 root 192.168.29.22 ssh /usr/sbin/sshd no 931 220. 2023年08月01日 17:49:47 root 192.168.29.22 ssh /usr/sbin/sshd no 939 221. 2023年08月01日 17:49:50 root 192.168.29.22 ssh /usr/sbin/sshd no 947
 ```
 
 其他功能可通过 `man aureport` 查看。
