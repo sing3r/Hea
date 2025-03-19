@@ -6,20 +6,28 @@ import bz2
 import glob
 import fnmatch
 import subprocess
-from collections import defaultdict  # 新增关键导入
+import argparse  # <- 新增这行关键导入
+from collections import defaultdict
 from datetime import datetime
 
+# 风险等级排序字典（新增）
+RISK_ORDER = {
+    'critical': 4,
+    'high': 3,
+    'medium': 2,
+    'notice': 1
+}
 
 class LogProcessor:
     """统一日志处理基类"""
     def __init__(self):
         self.handlers = {
             'syslog': {
-                'patterns': ['syslog*', 'messages*'],
+                'patterns': ['syslog*'],
                 'handler': self.parse_syslog
             },
             'auth': {
-                'patterns': ['auth.log*', 'secure*'],
+                'patterns': ['auth.log*', 'secure*', 'messages*'],
                 'handler': self.parse_auth
             },
             'audit': {
@@ -31,11 +39,20 @@ class LogProcessor:
                 'handler': self.parse_kern
             }
         }
+
+        # 初始化状态管理
         self.state_file = '.log_processor_state'
         self.processed = self._load_state()
         self.current_stats = {}
 
-        # Syslog日志分析规则
+        # 调试开关（新增）
+        self.debug_mode = True
+        # 初始化所有规则模式 
+        self._init_rules()
+
+    def _init_rules(self):
+        """初始化所有检测规则"""
+        # Syslog规则
         self.syslog_rules = {
             'service_fail': re.compile(
                 r"Failed to start (.+?) service|(segmentation fault)"
@@ -56,6 +73,7 @@ class LogProcessor:
                 r"SRC=(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
             )
         }
+
 
         # Secure日志分析规则（统一命名捕获组）
         self.secure_rules = {
@@ -134,15 +152,15 @@ class LogProcessor:
         self.auth_rules = {
             'ssh_fail': {
                 'regex': re.compile(
-                    r"Failed (password|publickey) for (?:invalid user )?(?P<user>\S+) "
-                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)"
+                    r"Failed (password|publickey) for (?:invalid user )?(?P<user>\S+?) "
+                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)(?: port \d+)?"
                 ),
                 'risk_level': 'medium'
             },
             'ssh_success': {
                 'regex': re.compile(
                     r"Accepted (password|publickey) for (?P<user>\S+) "
-                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)"
+                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)(?: port \d+)?"
                 ),
                 'risk_level': 'notice'
             },
@@ -204,20 +222,32 @@ class LogProcessor:
             json.dump(self.current_stats, f)
 
     def detect_rotated_files(self, log_dir='/var/log'):
-        """识别所有日志文件及其轮转版本"""
+        """识别所有日志文件及其轮转版本（支持递归子目录）"""
         log_files = []
         
-        # 识别所有可能的日志文件
-        for log_type, config in self.handlers.items():
-            for pattern in config['patterns']:
-                full_pattern = os.path.join(log_dir, pattern)
-                for fpath in glob.glob(full_pattern):
-                    if os.path.isfile(fpath):
-                        log_files.append(fpath)
+        # 递归遍历目录结构（最多5层子目录）
+        max_depth = 5
+        base_depth = log_dir.count(os.sep)
+        for root, dirs, files in os.walk(log_dir):
+            # 计算当前递归深度
+            current_depth = root.count(os.sep) - base_depth
+            if current_depth > max_depth:
+                del dirs[:]  # 不再深入读取子目录
+                continue
+            
+            # 识别所有可能的日志文件
+            for log_type, config in self.handlers.items():
+                for pattern in config['patterns']:
+                    matched_files = fnmatch.filter(files, pattern)
+                    for filename in matched_files:
+                        fpath = os.path.join(root, filename)
+                        if os.path.isfile(fpath):
+                            log_files.append(fpath)
+        # 【新增关键代码】处理结果集
+        log_files = list(set(log_files))  # 去重
+        log_files.sort(key=lambda x: os.path.getmtime(x))  # 按时间排序
         
-        # 按修改时间排序（旧文件先处理）
-        log_files.sort(key=lambda x: os.path.getmtime(x))
-        return log_files
+        return log_files  # 【修复点】必须返回列表
 
     def _open_logfile(self, filepath):
         """智能打开日志文件（支持压缩格式）"""
@@ -234,7 +264,17 @@ class LogProcessor:
         return f"{stat.st_ino}-{stat.st_size}"
 
     def process_directory(self, log_dir='/var/log'):
-        """处理整个日志目录"""
+        """处理日志目录前进行路径标准化"""
+        log_dir = os.path.abspath(os.path.expanduser(log_dir))
+        
+        if not os.path.exists(log_dir):
+            print(f"  警告：路径 {log_dir} 不存在，跳过")
+            return False
+        
+        if not os.path.isdir(log_dir):
+            print(f"  警告：{log_dir} 不是有效目录，跳过")
+            return False
+        
         print(f"开始分析日志目录: {log_dir}")
         
         for fpath in self.detect_rotated_files(log_dir):
@@ -273,8 +313,33 @@ class LogProcessor:
         
         self._save_state()
 
+
+    def _debug_match(self, rule_name, pattern, line, match):
+        """统一的调试输出方法"""
+        if not self.debug_mode:
+            return
+            
+        status = "✓" if match else "✗"
+        debug_output = [
+            f"[DEBUG] 规则 '{rule_name}' {status}",
+            f"模式: {pattern}",
+            f"日志行: {line[:80]}{'...' if len(line)>80 else ''}"
+        ]
+        
+        if match:
+            debug_output.append(f"捕获字段: {dict(match.groupdict())}")
+            
+        print("\n".join(debug_output) + "\n" + "-"*50)
+
+
     # 以下是示例处理函数，可替换为实际检测逻辑
     def parse_syslog(self, line, fpath):
+        # 服务启动失败检测
+        service_match = self.syslog_rules['service_fail'].search(line)
+        self._debug_match('syslog/service_fail',
+                        self.syslog_rules['service_fail'].pattern,
+                        line, service_match)
+        
         """syslog多规则高级分析"""
         matched = False
         alert_msg = f"[SYSLOG] 检测到安全事件 ({fpath}): "
@@ -718,15 +783,40 @@ class EnhancedLogProcessor(LogProcessor):
             return []
 
 if __name__ == '__main__':
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(
+        description='Linux日志深度分析工具',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument('--path', 
+                        nargs='+',
+                        required=True,
+                        metavar='DIR',
+                        help='''指定日志目录（可多个），例如：
+                        --path /var/log                        # 系统默认日志
+                        --path /backup/202404/logs /tmp/audit  # 多个备份目录''',
+                        )
+    args = parser.parse_args()
+    # 初始化处理器
     processor = EnhancedLogProcessor()
     
-    # 指定日志目录并处理所有日志文件
-    log_dirs = ['/var/log']
-    
-    for log_dir in log_dirs:
-        if os.path.isdir(log_dir):
+    # 按优先级处理所有输入的日志目录
+    for idx, log_dir in enumerate(args.path, 1):
+        print(f"\n[{idx}/{len(args.path)}] 正在分析目录: {log_dir}")
+        
+        if not os.path.exists(log_dir):
+            print(f"  警告：路径 {log_dir} 不存在，跳过")
+            continue
+            
+        if not os.path.isdir(log_dir):
+            print(f"  警告：{log_dir} 不是目录，跳过")
+            continue
+            
+        try:
             processor.process_directory(log_dir)
-        else:
-            print(f"警告：日志目录 {log_dir} 不存在")
+        except PermissionError as e:
+            print(f"  权限拒绝：{str(e)}")
+        except Exception as e:
+            print(f"  处理异常：{str(e)}")
     
-    print("分析完成，处理状态已保存")
+    print("\n分析完成，结果已保存到状态文件")
