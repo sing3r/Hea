@@ -203,6 +203,40 @@ class LogProcessor:
                 'severity': 'high'
             }
         }
+        # kern日志高级检测规则
+        self.kern_rules = {
+            'panic': {
+                'regex': re.compile(r"Kernel panic - not syncing: (.+)$"), 
+                'severity': 'critical'
+            },
+            'hardware': {
+                'regex': re.compile(r"(Hardware Error|MCE|PCIe Bus Error).*severity: (\w+)"),
+                'severity': 'high'
+            },
+            'oom': {
+                'regex': re.compile(
+                    r"Out of memory: Kill process (\d+) \((\S+)\) " 
+                    r"total-vm:(\d+)kB, anon-rss:(\d+)kB"
+                ),
+                'severity': 'high'
+            },
+            'storage': {
+                'regex': re.compile(r"(sd[a-z]|nvme\d+n\d+)\s: (I/O error|access beyond end)"),
+                'severity': 'medium'
+            },
+            'firewall': {
+                'regex': re.compile(r"IN=(\S+)\sOUT=(\S*)\s.*SRC=(\d+\.\d+\.\d+\.\d+)"), 
+                'severity': 'notice'
+            },
+            'thermal': {
+                'regex': re.compile(r"CPU(\d+):.+?(temperature above|clock throttled)"), 
+                'severity': 'warning'
+            },
+            'acpi': { 
+                'regex': re.compile(r"ACPI Error: (\w+ .+?) \(.+\)"),
+                'severity': 'medium'
+            }
+        }
 
         
 

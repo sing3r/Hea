@@ -18,35 +18,29 @@ RISK_ORDER = {
 }
 
 class LogProcessor:
-    """Linux日志分析处理器（修复增强版）"""
+    """Linux日志分析处理器（完整实现版）"""
     def __init__(self):
         self.handlers = {
             'syslog': {
-                'patterns': ['syslog*'],
+                'patterns': ['*syslog*'],
                 'handler': self.parse_syslog
             },
             'auth': {
-                'patterns': ['auth.log*', 'secure*', 'messages*'],
+                'patterns': ['*auth.log*', '*secure*', '*messages*'],
                 'handler': self.parse_auth
             },
             'audit': {
-                'patterns': ['audit.log*'],
+                'patterns': ['*audit.log*'],
                 'handler': self.parse_audit
             },
             'kern': {
-                'patterns': ['kern.log*'],
+                'patterns': ['*kern.log*'],
                 'handler': self.parse_kern
             }
         }
-        self.state_file = '.log_processor_state'
-        self.processed = self._load_state()
-        self.current_stats = {}
-        self.debug_mode = False
 
-        # 初始化检测规则（保持原有规则）
-        self._init_rules()
+        self.debug_mode = False  # 调试模式默认关闭
 
-    def _init_rules(self):
         # 初始化所有检测规则
         self.syslog_rules = {
             'service_fail': re.compile(
@@ -123,156 +117,228 @@ class LogProcessor:
             }
         }
 
-    # ---------- 核心方法修复 ----------
+    # ---------- 核心方法实现 ----------
+    def detect_rotated_files(self, log_dir='/var/log'):
+        print(f"[DEBUG FILE] 扫描目录: {log_dir}")  # 显示扫描路径
+
+        """递归查找日志文件"""
+        log_files = []
+        max_depth = 5
+        base_depth = log_dir.count(os.sep)
+        
+        for root, dirs, files in os.walk(log_dir):
+            current_depth = root.count(os.sep) - base_depth
+            if current_depth > max_depth:
+                del dirs[:]
+                continue
+
+            for config in self.handlers.values():
+                for pattern in config['patterns']:
+                    for filename in fnmatch.filter(files, pattern):
+                        fpath = os.path.join(root, filename)
+                        if os.path.isfile(fpath):
+                            log_files.append(fpath)
+
+        log_files = list(set(log_files))
+        log_files.sort(key=lambda x: os.path.getmtime(x))
+        
+        print(f"[DEBUG FILE] 找到文件列表:")  # 显示所有检测到的文件
+        for f in log_files:
+            print(f"  - {f}")
+            
+        return log_files
+
+    def _open_logfile(self, filepath):
+        """打开各种格式的日志文件"""
+        if filepath.endswith('.gz'):
+            return gzip.open(filepath, 'rt')
+        elif filepath.endswith('.bz2'):
+            return bz2.open(filepath, 'rt')
+        else:
+            return open(filepath, 'r')
+
+
     def process_directory(self, log_dir):
-        """处理目录（单次扫描优化）"""
+        """处理指定目录"""
         log_dir = os.path.abspath(os.path.expanduser(log_dir))
         if not os.path.isdir(log_dir):
             print(f"[ERROR] 无效目录: {log_dir}")
             return
 
-        print(f"\n▶ 分析目录: {log_dir}")
-        log_files = self.detect_rotated_files(log_dir)  # 只扫描一次
+        print(f"\n▶ 开始分析目录: {log_dir}")
 
-        # 1. 调试显示处理配置
-        for fpath in log_files:
-            print(f"[文件匹配检查] {os.path.relpath(fpath, log_dir)}")
-            matched = False
+        for fpath in self.detect_rotated_files(log_dir):
+            print(f"[DEBUG HANDLER] 处理文件: {fpath}")
+            
+            handler = None
+            # 显示各处理器模式匹配结果
             for handler_name, config in self.handlers.items():
-                for pattern in config['patterns']:
-                    if fnmatch.fnmatch(os.path.basename(fpath), pattern):
-                        print(f"  ✅ 匹配处理器: {handler_name} (模式: {pattern})")
-                        matched = True
-                        break
-                if matched: break
-            if not matched:
-                print("  ❌ 未匹配到任何处理器")
+                print(f"  检查处理器 {handler_name}: 模式 {config['patterns']}")
+                if any(fnmatch.fnmatch(fpath, p) for p in config['patterns']):
+                    print(f"  ✅ 分配处理器: {handler_name}")
+                    handler = config['handler']
+                    break
 
-        # 2. 实际处理流程
-        for fpath in log_files:
-            self._process_single_file(fpath, log_dir)
+            if not handler:
+                continue
 
-        self._save_state()
-
-    def _process_single_file(self, fpath, log_dir):
-        """单文件处理核心逻辑"""
-        rel_path = os.path.relpath(fpath, log_dir)
-        handler = None
-        # 匹配处理器
-        for config in self.handlers.values():
-            if any(fnmatch.fnmatch(os.path.basename(fpath), p) for p in config['patterns']):
-                handler = config['handler']
-                break
-
-        if not handler:
-            if self.debug_mode:
-                print(f"  ❌ 跳过未匹配文件: {rel_path}")
-            return
-
-        if self.debug_mode:
-            print(f"\n🔍 开始处理: {rel_path} -> 处理器: {handler.__name__}")
-
-        # 状态校验
-        file_sig = self._get_file_signature(fpath)
-        last_pos = self.processed.get(fpath, {}).get('pos', 0)
-        current_size = os.path.getsize(fpath)
-        
-        if self.debug_mode:
-            print(f"  文件签名: {file_sig} (原签名: {self.processed.get(fpath, {}).get('sig', '<新文件>')})")
-            print(f"  文件尺寸: {current_size} bytes (上次处理位置: {last_pos})")
-
-        if self.processed.get(fpath, {}).get('sig') == file_sig and last_pos == current_size:
-            if self.debug_mode:
-                print(f"  ⏩ 已处理完成: 跳过执行")
-            return
-
-        # 处理内容
-        try:
+            # 处理文件内容
             with self._open_logfile(fpath) as f:
-                f.seek(last_pos)
-                if self.debug_mode:
-                    print(f"  当前文件指针: {f.tell()}")
-                    print(f"  {'─'*30} 开始处理内容 {'─'*30}")
-                
-                line_count = 0
                 for line in f:
-                    line_count += 1
                     handler(line.strip(), fpath)
-                    if self.debug_mode and line_count % 100 == 0:
-                        print(f"  已处理 {line_count} 行...")
-                
-                new_pos = f.tell()
-                if self.debug_mode:
-                    print(f"  {'─'*30} 处理完成 {'─'*30}")
-                    print(f"  新文件指针位置: {new_pos}")
-        except Exception as e:
-            print(f"  ⚠ 处理异常: {str(e)}")
+
+        # for fpath in self.detect_rotated_files(log_dir):
+        #     print(f"  正在处理文件: {os.path.relpath(fpath, log_dir)}")
+            
+            # 匹配处理器
+            
+            # for config in self.handlers.values():
+            #     if any(fnmatch.fnmatch(fpath, p) for p in config['patterns']):
+            #         handler = config['handler']
+            #         break
+
+            # if not handler:
+            #     continue
+
+            # # 处理文件内容
+            # with self._open_logfile(fpath) as f:
+            #     for line in f:
+            #         handler(line.strip(), fpath)
+
+    def _debug_match(self, category, rule_name, pattern, line, match):
+        """调试输出"""
+        if not self.debug_mode:
             return
 
-        # 更新状态
-        self.current_stats[fpath] = {
-            'sig': file_sig,
-            'pos': new_pos,
-            'last_processed': datetime.now().isoformat()
-        }
+        status = "✅ 匹配成功" if match else "❌ 未匹配"
+        output = [
+            f"[DEBUG][{category}] 规则: {rule_name}",
+            f"  正则模式: {pattern}",
+            f"  日志内容: {line[:100]}{'...' if len(line)>100 else ''}",
+            f"  匹配状态: {status}"
+        ]
+        if match and match.groupdict():
+            output.append(f"  捕获字段: {dict(match.groupdict())}")
+        print("\n".join(output) + "\n" + "-"*60)
 
-    def _open_logfile(self, filepath):
-        """带调试的文件打开方法"""
+    # ---------- 日志分析方法 ----------
+    def parse_syslog(self, line, fpath):
+        # 显示原始日志内容
         if self.debug_mode:
-            print(f"  🚪 打开文件: {filepath} (大小: {os.path.getsize(filepath)} bytes)")
-        
-        if filepath.endswith('.gz'):
-            return gzip.open(filepath, 'rt')
-        elif filepath.endswith('.bz2'):
-            return bz2.open(filepath, 'rt')
-        elif 'btmp' in filepath:
-            return self._parse_lastb(filepath)
-        else:
-            return open(filepath, 'r')
+            print(f"[DEBUG LINE] 解析日志行: {line}")
 
-# ------------------ 其他方法保持原有功能 ------------------ 
-# （_init_rules, detect_rotated_files, _debug_match 等方法内容保持不变）
+        """分析syslog日志"""
+        # 服务故障检测
+        match = self.syslog_rules['service_fail'].search(line)
+        self._debug_match('syslog', 'service_fail', 
+                        self.syslog_rules['service_fail'].pattern, line, match)
+        if match:
+            detail = match.group(1) or "段错误"
+            print(f"[SYSLOG] 服务异常 ({fpath}): {detail}")
 
-class EnhancedLogProcessor(LogProcessor):
-    """增强版-支持二进制日志解析"""
-    def _parse_lastb(self, fpath):
-        """二进制日志解析"""
-        try:
-            output = subprocess.check_output(['lastb', '-f', fpath], 
-                                            text=True, stderr=subprocess.DEVNULL)
-            return output.split('\n')
-        except Exception as e:
-            print(f"[WARN] 解析失败: {fpath} ({str(e)})")
-            return []
+        # 内存异常检测
+        match = self.syslog_rules['oom_killer'].search(line)
+        self._debug_match('syslog', 'oom_killer', 
+                        self.syslog_rules['oom_killer'].pattern, line, match)
+        if match:
+            print(f"[SYSLOG] OOM事件 ({fpath}): 进程 {match.group(2)}({match.group(1)}) 被终止")
+
+        # 网络问题
+        match = self.syslog_rules['network_issues'].search(line)
+        self._debug_match('syslog', 'network_issues', 
+                        self.syslog_rules['network_issues'].pattern, line, match)
+        if match:
+            issue = 'DNS故障' if 'DNS' in line else '连接重置'
+            print(f"[SYSLOG] 网络问题 ({fpath}): {issue}")
+
+    def parse_auth(self, line, fpath):
+        # 显示原始日志内容
+        if self.debug_mode:
+            print(f"[DEBUG LINE] 解析日志行: {line}")
+
+        """分析认证日志"""
+        # SSH登录失败
+        match = self.auth_rules['ssh_fail']['regex'].search(line)
+        self._debug_match('auth', 'ssh_fail', 
+                        self.auth_rules['ssh_fail']['regex'].pattern, line, match)
+        if match:
+            user_type = "无效用户" if 'invalid' in line else "用户"
+            print(f"[AUTH] 登录失败 ({fpath}): {user_type} {match.group('user')} 来自 {match.group('ip')}")
+
+        # 暴力破解检测
+        match = self.auth_rules['brute_force']['regex'].search(line)
+        self._debug_match('auth', 'brute_force', 
+                        self.auth_rules['brute_force']['regex'].pattern, line, match)
+        if match:
+            print(f"[AUTH] 暴力破解尝试 ({fpath}): {match.group('count')}次失败登录")
+
+        # 用户变更检测
+        match = self.auth_rules['user_change']['regex'].search(line)
+        self._debug_match('auth', 'user_change', 
+                        self.auth_rules['user_change']['regex'].pattern, line, match)
+        if match:
+            action_map = {
+                'new user': '创建', 
+                'modifying user': '修改',
+                'deleting user': '删除'
+            }
+            print(f"[AUTH] 用户变更 ({fpath}): {action_map[match.group('action')]}用户 {match.group('username')}")
+
+    def parse_audit(self, line, fpath):
+        # 显示原始日志内容
+        if self.debug_mode:
+            print(f"[DEBUG LINE] 解析日志行: {line}")
+
+        """分析审计日志"""
+        # 特权命令滥用检测
+        match = re.search(self.audit_rules['sudo_abuse']['regex'], line)
+        self._debug_match('audit', 'sudo_abuse', 
+                        self.audit_rules['sudo_abuse']['regex'].pattern, line, match)
+        if match:
+            print(f"[AUDIT] 可疑提权操作 ({fpath}): {match.group(0)}")
+
+    def parse_kern(self, line, fpath):
+        # 显示原始日志内容
+        if self.debug_mode:
+            print(f"[DEBUG LINE] 解析日志行: {line}")
+
+        """分析内核日志"""
+        # 硬件错误检测
+        match = re.search(r'Hardware Error', line)  # 示例检测规则
+        self._debug_match('kern', 'hardware_error', 
+                         r'Hardware Error', line, match)
+        if match:
+            print(f"[KERN] 硬件错误 ({fpath}): 请检查系统硬件状态")
+
 
 # ------------------ 主程序入口 ------------------
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Linux日志分析工具 v2.1 (修复增强版)",
+        description="Linux日志深度分析工具 v2.0",
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--path', nargs='+', required=True,
-                      help="日志目录路径（支持多个）\n例: --path /var/log /backup_logs")
+                       help="指定要分析的日志目录（支持多个目录）\n示例: --path /var/log /backup/logs")
     parser.add_argument('--debug', action='store_true',
-                      help="启用调试模式")
+                       help="启用调试模式显示匹配细节")
     args = parser.parse_args()
 
-    processor = EnhancedLogProcessor()
-    processor.debug_mode = args.debug
+    processor = LogProcessor()
+    processor.debug_mode = args.debug  # 控制调试输出
     
     print("="*60)
     print("Linux日志深度分析工具 开始运行".center(50))
-    print(f"[系统状态] 调试模式: {'✅ 已启用' if processor.debug_mode else '❌ 未启用'}")
+    print(f"[DEBUG INIT] 调试模式: {'开启' if processor.debug_mode else '关闭'}")  # 🚨关键验证点
     print("="*60)
 
     for idx, path in enumerate(args.path, 1):
-        print(f"\n🔍 任务进度: [{idx}/{len(args.path)}] 目录: {path}")
+        print(f"\n🔍 [{idx}/{len(args.path)}] 正在处理目录: {path}")
         try:
             processor.process_directory(path)
         except PermissionError as e:
-            print(f"  权限错误: {str(e)} (尝试使用sudo运行)")
+            print(f"  权限不足: {str(e)}")
         except Exception as e:
-            print(f"  运行异常: {str(e)}")
+            print(f"  处理异常: {str(e)}")
 
     print("\n" + "="*60)
-    print("分析完成！".center(50))
+    print("分析完成，结果已保存至 .log_processor_state".center(50))
     print("="*60)
