@@ -45,7 +45,7 @@ class LogProcessor:
                 'handler': self.parse_messages
             }
         }
-
+        self.valid_users = ['root', 'admin', 'deploy']  # 添加用户白名单
         self.debug_mode = False  # 调试模式默认关闭
 
         # syslog 规则
@@ -363,8 +363,39 @@ class LogProcessor:
                 'risk_level': 'critical',
                 'auto_repair': True  # 标注是否需要触发自动修复
             },
-            # ...保留原有ssh/sudo等规则并确保结构统一...
-            
+            'ssh_fail': {
+                'regex': re.compile(
+                    r"Failed (?P<method>password|publickey) for (?:invalid user )?(?P<user>\S+?) "
+                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)(?: port \d+)?"
+                ),
+                'risk_level': 'medium'
+            },
+            'ssh_success': {
+                'regex': re.compile(
+                    r"Accepted (?P<method>password|publickey) for (?P<user>\S+) "
+                    r"from (?P<ip>\d+\.\d+\.\d+\.\d+)(?: port \d+)?"
+                ),
+                'risk_level': 'notice'
+            },
+            'sudo_usage': {
+                'regex': re.compile(
+                    r"(?P<operator>\w+) : .*COMMAND=(?P<command>(?:/[^/ ]+)+)"
+                ),
+                'risk_level': 'high'
+            },
+            'user_change': {
+                'regex': re.compile(
+                    r"(useradd|usermod|userdel)\[\d+\]: "
+                    r"(?P<action>new user|modifying user|deleting user) '(?P<username>\w+)'"
+                ),
+                'risk_level': 'critical'
+            },
+            'brute_force': {
+                'regex': re.compile(
+                    r"message repeated (?P<count>\d+) times:.* Failed password"
+                ),
+                'risk_level': 'high'
+            },
             # ================== 新增监控项 ================== 
             'time_skew': {
                 'regex': re.compile(
@@ -801,43 +832,131 @@ class LogProcessor:
                 
     ## messages 日志分析
     def parse_messages(self, line, fpath):
-        """系统日志解析器（保持原处理结构）"""
-        # 调试信息输出
-        if self.debug_mode:
-            print(f"[DEBUG] 解析系统日志: {line.strip()}")
-        # 内核严重错误检测
-        kernel_err = self.messages_rules['kernel_errors']['regex'].search(line)
-        self._debug_match('massage', 'kernel_errors', line, kernel_err)
-        if kernel_err:
-            err_type = 'Kernel Panic' if 'panic' in line else 'Fatal BUG'
-            print(f"[SYSTEM/{self.messages_rules['kernel_errors']['risk_level'].upper()}] 内核级错误: {err_type}")
-        # 存储设备故障
-        storage_err = self.messages_rules['storage_errors']['regex'].search(line)
-        self._debug_match('massage', 'storage_errors', line, storage_err)
-        if storage_err:
-            fs_type = 'XFS' if 'XFS' in line else 'EXT4' if 'EXT4' in line else 'UnknowFS'
-            print(f"[SYSTEM/{self.messages_rules['storage_errors']['risk_level'].upper()}] 存储异常 ({fs_type}): {line[:60]}...")
-        # 权限提升行为
-        auth_elev = self.messages_rules['auth_elevation']['regex'].search(line)
-        self._debug_match('massage', 'auth_elevation', line, auth_elev)
-        if auth_elev:
-            action = 'root密码登录' if 'accepted password' in line else '特权切换'
-            print(f"[SYSTEM/{self.messages_rules['auth_elevation']['risk_level'].upper()}] 权限变更: {action}")
-        # 硬性规则错误（如文件系统只读重挂载）
-        fs_crit = self.messages_rules['fs_critical']['regex'].search(line)
-        self._debug_match('massage', 'fs_critical', line, fs_crit)
-        if fs_crit:
-            print(f"[SYSTEM/CRITICAL] 文件系统紧急事件: 系统进入只读模式") 
-        # SSH相关规则（复用原有逻辑）
+        """解析系统日志（严格保持原有处理逻辑）"""
+        
+        # ================== 硬件层监控 ==================
+        # 1. 内核致命错误（最高优先级）
+        kernel_match = self.messages_rules['kernel_errors']['regex'].search(line)
+        self._debug_match('messages', 'kernel_errors', line, kernel_match)
+        if kernel_match:
+            if 'panic' in line:
+                err_type = "内核恐慌(Kernel Panic)"
+            elif 'Hardware name' in line:
+                hw_part = re.search(r"Hardware name:\s*(\S+)", line).group(1)  # 提取硬件组件名（例：Hardware name: QEMU Virtual Machine）
+                err_type = f"硬件故障({hw_part})"
+            else:
+                err_type = "未知内核错误"
+            print(f"[SYSTEM/CRITICAL] {self.messages_rules['kernel_errors']['desc']} ({fpath}): {err_type}")
+
+        # 2. 存储错误检测
+        storage_match = self.messages_rules['storage_errors']['regex'].search(line)
+        self._debug_match('messages', 'storage_errors', line, storage_match)
+        if storage_match:
+            if 'EXT4-fs error' in line:
+                fs_type = 'EXT4'
+            elif 'XFS' in line:
+                fs_type = 'XFS'
+            else:
+                fs_type = '存储设备'
+            print(f"[SYSTEM/CRITICAL] {fs_type}异常 ({fpath}): 日志摘要 -> {line[:60]}...") 
+
+        # 3. 硬件告警（电源/温度/S.M.A.R.T）
+        hw_match = self.messages_rules['hardware_alert']['regex'].search(line)
+        self._debug_match('messages', 'hardware_alert', line, hw_match)
+        if hw_match and not any(kw in line for kw in self.messages_rules['hardware_alert']['suppress_keywords']):
+            alert_msg = "温度超标" if 'temperature' in line else "电源故障" if 'PSU' in line else "磁盘S.M.A.R.T告警"
+            print(f"[SYSTEM/HIGH] 硬件异常 ({fpath}): {alert_msg}") 
+
+        # ================== 服务层监控 ==================
+        # 4. 服务崩溃检测（Nginx/MySQL）
+        service_match = self.messages_rules['service_crash']['regex'].search(line)
+        self._debug_match('messages', 'service_crash', line, service_match)
+        if service_match:
+            service = 'Nginx' if 'nginx' in line else 'MySQL' if 'mysql' in line else 'Docker'  # Docker检测需要额外逻辑
+            print(f"[SYSTEM/HIGH] 服务异常 ({fpath}): {service}非正常终止")
+
+        # ================== 安全性检测 ==================
+        # 5. 权限提升行为（sudo su / root认证失败）
+        auth_elev_match = self.messages_rules['auth_elevation']['regex'].search(line)
+        self._debug_match('messages', 'auth_elevation', line, auth_elev_match)
+        if auth_elev_match:
+            if 'COMMAND=/bin/su' in line:
+                print(f"[SECURITY/HIGH] 可疑权限提升 ({fpath}): 检测到sudo执行su命令")
+            else:
+                print(f"[SECURITY/HIGH] 特权用户认证失败 ({fpath}): root账号登录尝试被拒绝")
+
+        # 6. 容器逃逸检测
+        container_match = self.messages_rules['container_escape']['regex'].search(line)
+        self._debug_match('messages', 'container_escape', line, container_match)
+        if container_match:
+            if 'privileged' in line:
+                print(f"[SECURITY/HIGH] 容器配置风险 ({fpath}): 检测到特权模式启动") 
+            else:
+                print(f"[SECURITY/HIGH] 容器隔离异常 ({fpath}): Namespace错误") 
+
+        # ================== 现有规则处理 ==================
+        # 7. 文件系统紧急事件（只读挂载）
+        fs_match = self.messages_rules['fs_critical']['regex'].search(line)
+        self._debug_match('messages', 'fs_critical', line, fs_match)
+        if fs_match:
+            print(f"[SYSTEM/CRITICAL] 文件系统紧急事件 ({fpath}): 系统已进入只读模式，需运维介入！")
+
+        # 8. SSH相关告警（失败/成功）
+        # SSH失败检测
         ssh_fail_match = self.messages_rules['ssh_fail']['regex'].search(line)
-        if ssh_fail_match:  # 与auth模块一致的告警
-            print(f"[SSH/MEDIUM] 认证失败: IP {ssh_fail_match.group('ip')}")
-        # 用户账户变更（日志跨多个组件时需要兼容）
+        self._debug_match('messages', 'ssh_fail', line, ssh_fail_match)
+        if ssh_fail_match:
+            method = ssh_fail_match.group('method')
+            user = ssh_fail_match.group('user')
+            ip = ssh_fail_match.group('ip')
+            print(f"[SECURITY/MEDIUM] SSH认证失败 ({fpath}): IP {ip} 使用{method}登录用户'{user}'失败")
+
+        # SSH成功检测（仅记录非预期用户）
+        ssh_ok_match = self.messages_rules['ssh_success']['regex'].search(line)
+        self._debug_match('messages', 'ssh_success', line, ssh_ok_match)
+        if ssh_ok_match:
+            user = ssh_ok_match.group('user')
+            if user not in self.valid_users: # valid_users需预定义（例如 ['admin','deploy']）
+                print(f"[SECURITY/NOTICE] 非常规SSH登录 ({fpath}): 用户'{user}'成功登录") 
+
+        # 9. Sudo命令追踪
+        sudo_match = self.messages_rules['sudo_usage']['regex'].search(line)
+        self._debug_match('messages', 'sudo_usage', line, sudo_match)
+        if sudo_match:
+            user = sudo_match.group('operator')
+            cmd = sudo_match.group('command')
+            print(f"[SECURITY/HIGH] 特权命令执行 ({fpath}): 用户 {user} 执行高风险命令 -> {cmd}")
+
+        # 10. 用户账户变更（增/删/改）
         user_change_match = self.messages_rules['user_change']['regex'].search(line)
-        self._debug_match('massage', 'user_change', line, user_change_match)
+        self._debug_match('messages', 'user_change', line, user_change_match)
         if user_change_match:
+            action = "创建" if user_change_match.group('action') == 'new user' else user_change_match.group('action')
             username = user_change_match.group('username')
-            print(f"[SYSTEM/CRITICAL] 用户管理: 账户 {username} 被{user_change_match.group('action')}")
+            print(f"[SYSTEM/CRITICAL] 用户配置变更 ({fpath}): 账户 {username} 被{action}")
+
+        # 11. 暴力破解检测
+        brute_match = self.messages_rules['brute_force']['regex'].search(line)
+        self._debug_match('messages', 'brute_force', line, brute_match)
+        if brute_match:
+            count = brute_match.group('count')
+            print(f"[SECURITY/HIGH] 暴力破解攻击 ({fpath}): 检测到连续 {count} 次失败尝试")
+
+        # 12. 时间同步异常
+        time_match = self.messages_rules['time_skew']['regex'].search(line)
+        self._debug_match('messages', 'time_skew', line, time_match)
+        if time_match:
+            print(f"[SYSTEM/MEDIUM] 时间同步异常 ({fpath}): 系统时钟偏移风险")
+
+        # 13. 网络配置篡改
+        net_match = self.messages_rules['network_tamper']['regex'].search(line)
+        self._debug_match('messages', 'network_tamper', line, net_match)
+        if net_match:
+            if 'iptables' in line:
+                print(f"[SECURITY/MEDIUM] 防火墙规则更新 ({fpath}): 检测到DROP规则变更") 
+            else:
+                print(f"[SECURITY/MEDIUM] 网卡异常状态 ({fpath}): 疑似进入混杂模式或链路断开")
+
 
 
 # ------------------ 主程序入口 ------------------
