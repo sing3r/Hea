@@ -164,7 +164,7 @@ class LogProcessor:
             # 原规则优化
             'sudo_abuse': {
                 'regex': re.compile(
-                    r'comm="sudo".*exe=\"(\/usr\/sbin\/)(useradd|usermod|visudo|passwd)\b'), 
+                    r'comm="sudo".*exe="(/usr/sbin/)(useradd|usermod|visudo|passwd)\b'),  # 修正转义字符和结尾的括号
                 'sensitive_cmds': {
                     'useradd': '创建可疑账号',
                     'visudo': '修改sudo权限'
@@ -273,11 +273,11 @@ class LogProcessor:
             
             # 危险命令执行（T1059）
             'dangerous_sudo': {
-                'regex': re.compile(
-                    r"COMMAND=(\S*?(?:/bin/(bash|sh)|"
-                    r"visudo|chmod [0-7][0-7][0-7] \S+|"
-                    r"useradd -G sudo)"
-                ),
+            'regex': re.compile(
+                r"COMMAND=(\S*?(?:/bin/(bash|sh)|"  # 注意括号闭合
+                r"visudo|chmod [0-7][0-7][0-7] \S+|"
+                r"useradd -G sudo))"  # 这里需要补全两重闭合
+            ),
                 'risk_level': 'critical',
                 'desc': "高风险提权操作"
             },
@@ -292,8 +292,8 @@ class LogProcessor:
             }
         }
 
-        # Massage 规则
-        self.massage_rules = {
+        # messages 规则
+        self.messages_rules = {
             # ================== 硬件层面监控 ==================
             'kernel_errors': {
                 'regex': re.compile(
@@ -453,7 +453,7 @@ class LogProcessor:
                 for line in f:
                     handler(line.strip(), fpath)
 
-    def _debug_match(self, category, rule_name, pattern, line, match):
+    def _debug_match(self, category, rule_name, line, match):
         """调试输出"""
         if not self.debug_mode:
             return
@@ -461,7 +461,7 @@ class LogProcessor:
         status = "✅ 匹配成功" if match else "❌ 未匹配"
         output = [
             f"[DEBUG][{category}] 规则: {rule_name}",
-            f"  正则模式: {pattern}",
+            f"  正则模式: pattern",
             f"  日志内容: {line[:100]}{'...' if len(line)>100 else ''}",
             f"  匹配状态: {status}"
         ]
@@ -800,40 +800,40 @@ class LogProcessor:
             print(f"[SECURE/{self.secure_rules['backdoor_check']['risk_level'].upper()}] 后门警告 ({fpath}): 检测到{alert_sign}")
                 
     ## messages 日志分析
-    def parse_massage(self, line, fpath):
+    def parse_messages(self, line, fpath):
         """系统日志解析器（保持原处理结构）"""
         # 调试信息输出
         if self.debug_mode:
             print(f"[DEBUG] 解析系统日志: {line.strip()}")
         # 内核严重错误检测
-        kernel_err = self.massage_rules['kernel_errors']['regex'].search(line)
+        kernel_err = self.messages_rules['kernel_errors']['regex'].search(line)
         self._debug_match('massage', 'kernel_errors', line, kernel_err)
         if kernel_err:
             err_type = 'Kernel Panic' if 'panic' in line else 'Fatal BUG'
-            print(f"[SYSTEM/{self.massage_rules['kernel_errors']['risk_level'].upper()}] 内核级错误: {err_type}")
+            print(f"[SYSTEM/{self.messages_rules['kernel_errors']['risk_level'].upper()}] 内核级错误: {err_type}")
         # 存储设备故障
-        storage_err = self.massage_rules['storage_errors']['regex'].search(line)
+        storage_err = self.messages_rules['storage_errors']['regex'].search(line)
         self._debug_match('massage', 'storage_errors', line, storage_err)
         if storage_err:
             fs_type = 'XFS' if 'XFS' in line else 'EXT4' if 'EXT4' in line else 'UnknowFS'
-            print(f"[SYSTEM/{self.massage_rules['storage_errors']['risk_level'].upper()}] 存储异常 ({fs_type}): {line[:60]}...")
+            print(f"[SYSTEM/{self.messages_rules['storage_errors']['risk_level'].upper()}] 存储异常 ({fs_type}): {line[:60]}...")
         # 权限提升行为
-        auth_elev = self.massage_rules['auth_elevation']['regex'].search(line)
+        auth_elev = self.messages_rules['auth_elevation']['regex'].search(line)
         self._debug_match('massage', 'auth_elevation', line, auth_elev)
         if auth_elev:
             action = 'root密码登录' if 'accepted password' in line else '特权切换'
-            print(f"[SYSTEM/{self.massage_rules['auth_elevation']['risk_level'].upper()}] 权限变更: {action}")
+            print(f"[SYSTEM/{self.messages_rules['auth_elevation']['risk_level'].upper()}] 权限变更: {action}")
         # 硬性规则错误（如文件系统只读重挂载）
-        fs_crit = self.massage_rules['fs_critical']['regex'].search(line)
+        fs_crit = self.messages_rules['fs_critical']['regex'].search(line)
         self._debug_match('massage', 'fs_critical', line, fs_crit)
         if fs_crit:
             print(f"[SYSTEM/CRITICAL] 文件系统紧急事件: 系统进入只读模式") 
         # SSH相关规则（复用原有逻辑）
-        ssh_fail_match = self.massage_rules['ssh_fail']['regex'].search(line)
+        ssh_fail_match = self.messages_rules['ssh_fail']['regex'].search(line)
         if ssh_fail_match:  # 与auth模块一致的告警
             print(f"[SSH/MEDIUM] 认证失败: IP {ssh_fail_match.group('ip')}")
         # 用户账户变更（日志跨多个组件时需要兼容）
-        user_change_match = self.massage_rules['user_change']['regex'].search(line)
+        user_change_match = self.messages_rules['user_change']['regex'].search(line)
         self._debug_match('massage', 'user_change', line, user_change_match)
         if user_change_match:
             username = user_change_match.group('username')
