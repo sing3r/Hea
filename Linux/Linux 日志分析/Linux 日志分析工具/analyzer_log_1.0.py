@@ -242,6 +242,17 @@ class LogProcessor:
 
         # Secure 规则
         self.secure_rules = {
+            # T1548权限提升
+            'auth_elevation': {
+                'regex': re.compile(
+                    r"(sudo:\s+\w+\s+:.*NOT in sudoers|"  # 匹配用户不在sudoers名单
+                    r"pam_unix\(sudo:auth\): auth could not identify password|"
+                    r"pam_unix\(sshd:auth\):.*user=root)",
+                    re.IGNORECASE
+                ),
+                'risk_level': 'high',  
+                'mitre_tactic': "TA0004"
+            },
             # 增强账户变更检测（T1098）
             'account_change': {
                 'regex': re.compile(
@@ -798,6 +809,25 @@ class LogProcessor:
         """Secure日志合规性检测（保持原有处理顺序）"""
         if self.debug_mode:
             print(f"[DEBUG SECURE] 原始日志: {line.strip()}")
+        auth_match = self.secure_rules['auth_elevation']['regex'].search(line)
+        self._debug_match('secure', 'auth_elevation', line, auth_match)
+        if auth_match:
+            # 检查三种匹配场景
+            if "NOT in sudoers" in line:
+                # 提取用户和命令数据
+                user = re.search(r'\s(\w+)\s+:.*NOT in sudoers', line).group(1)
+                cmd = re.search(r'COMMAND=(.*?)(;|$)', line)
+                cmd_str = cmd.group(1) if cmd else "未知命令"
+                print(f"[SECURE/HIGH] 未授权sudo尝试 ({fpath}): 用户 {user} 试图执行 -> {cmd_str}")
+            elif "pam_unix(sudo:auth)" in line:
+                # 提取尝试提权的用户
+                user = re.search(r'password for \[(\w+)\]', line).group(1)
+                print(f"[SECURE/HIGH] Sudo密码暴力破解 ({fpath}): 目标用户 {user}")
+            else:
+                # 原有root账号检测逻辑
+                user = "root"
+                ip = re.search(r'from\s+(\d+\.\d+\.\d+\.\d+)', line)
+                print(f"[SECURE/HIGH] 特权用户认证失败 ({fpath}): {user}@{ip.group(1) if ip else '未知IP'}")
         # ==== 账户权限变更检测 ====
         acc_match = self.secure_rules['account_change']['regex'].search(line)
         self._debug_match('secure', 'account_change', line, acc_match)

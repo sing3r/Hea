@@ -1,0 +1,299 @@
+============================================================
+                Linux日志深度分析工具 开始运行                
+[DEBUG INIT] 调试模式: 关闭
+============================================================
+
+🔍 [1/1] 正在处理目录: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log
+
+▶ 开始分析目录: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log
+[DEBUG FILE] 扫描目录: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log
+[DEBUG FILE] 找到文件列表:
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241208
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241208
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241215
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241215
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241223
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241223
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241229
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241229
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250106
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250106
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250112
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250112
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250120
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250120
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250126
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250126
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250202
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250202
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250209
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250209
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250217
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250217
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250223
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250223
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.4
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250302
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250302
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.3
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.2
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250310
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250310
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.1
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages
+  - /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241208
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241208
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241215
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241215
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241223
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241223
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20241229
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20241229
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250106
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250106
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250112
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250112
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250120
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250120
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250126
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250126
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250202
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250202
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250209
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250209
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250217
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250217
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250223
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250223
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.4
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  ✅ 分配处理器: audit
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250302
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250302
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.3
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  ✅ 分配处理器: audit
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.2
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  ✅ 分配处理器: audit
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure-20250310
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages-20250310
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log.1
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  ✅ 分配处理器: audit
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/secure
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  ✅ 分配处理器: secure
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/messages
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  检查处理器 kern: 模式 ['*kern.log*']
+  检查处理器 secure: 模式 ['*secure*']
+  检查处理器 messages: 模式 ['*messages*']
+  ✅ 分配处理器: messages
+[DEBUG HANDLER] 处理文件: /media/sing3r/Elements/Sing3r/LogBackup/10.194.184.52/log/log/audit/audit.log
+  检查处理器 syslog: 模式 ['*syslog*']
+  检查处理器 auth: 模式 ['*auth.log*']
+  检查处理器 audit: 模式 ['*audit.log*']
+  ✅ 分配处理器: audit
+
+============================================================
+         分析完成，结果已保存至 .log_processor_state         
+============================================================
